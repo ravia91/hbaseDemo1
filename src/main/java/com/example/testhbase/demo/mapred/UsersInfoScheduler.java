@@ -4,7 +4,10 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.filter.PrefixFilter;
+import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
@@ -40,26 +43,26 @@ public class UsersInfoScheduler {
 
       Job job = Job.getInstance(conf, "pageViewCounts");
       Scan scan = new Scan();
+      scan.setStartRow(Bytes.toBytes("ST_000503879_28"));
+      scan.setFilter(new PrefixFilter(Bytes.toBytes("ST_000503")));
+
+//      scan.setCaching(1000);
 
       // Create a scan
 
       // Configure the Map process to use HBase
       TableMapReduceUtil.initTableMapperJob(
 
-          "PageViews",                    // The name of the table
+          "product",                    // The name of the table
           scan,                           // The scan to execute against the table
           UsersTimeMapper.class,                 // The Mapper class
-          LongWritable.class,             // The Mapper output key class
+          ImmutableBytesWritable.class,             // The Mapper output key class
           LongWritable.class,             // The Mapper output value class
           job);  // The Hadoop job
 
-      job.setMapperClass(UsersTimeMapper.class);
-      job.setMapOutputKeyClass(LongWritable.class);
-      job.setMapOutputValueClass(LongWritable.class);
-
       // Configure the reducer process
       job.setReducerClass(UsersTimeReducer.class);
-      job.setCombinerClass(UsersTimeReducer.class);
+//      job.setCombinerClass(UsersTimeReducer.class);
 
       // Setup the output - we'll write to the file system: HOUR_OF_DAY   PAGE_VIEW_COUNT
       job.setOutputKeyClass(LongWritable.class);
