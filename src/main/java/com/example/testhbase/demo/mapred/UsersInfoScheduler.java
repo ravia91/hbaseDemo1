@@ -4,11 +4,12 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.filter.ColumnPrefixFilter;
+import org.apache.hadoop.hbase.filter.FilterList;
 import org.apache.hadoop.hbase.filter.PrefixFilter;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
@@ -44,11 +45,9 @@ public class UsersInfoScheduler {
       Job job = Job.getInstance(conf, "pageViewCounts");
       Scan scan = new Scan();
       scan.setStartRow(Bytes.toBytes("ST_000503879_28"));
+      scan.setFilter(new FilterList(new PrefixFilter(Bytes.toBytes("ST_000503")),
+          new ColumnPrefixFilter(Bytes.toBytes("catalogItemId"))));
       scan.setFilter(new PrefixFilter(Bytes.toBytes("ST_000503")));
-
-//      scan.setCaching(1000);
-
-      // Create a scan
 
       // Configure the Map process to use HBase
       TableMapReduceUtil.initTableMapperJob(
@@ -57,16 +56,14 @@ public class UsersInfoScheduler {
           scan,                           // The scan to execute against the table
           UsersTimeMapper.class,                 // The Mapper class
           ImmutableBytesWritable.class,             // The Mapper output key class
-          LongWritable.class,             // The Mapper output value class
+          ImmutableBytesWritable.class,             // The Mapper output value class
           job);  // The Hadoop job
 
-      // Configure the reducer process
       job.setReducerClass(UsersTimeReducer.class);
-//      job.setCombinerClass(UsersTimeReducer.class);
 
       // Setup the output - we'll write to the file system: HOUR_OF_DAY   PAGE_VIEW_COUNT
-      job.setOutputKeyClass(LongWritable.class);
-      job.setOutputValueClass(LongWritable.class);
+//      job.setOutputKeyClass(LongWritable.class);
+//      job.setOutputValueClass(LongWritable.class);
       job.setOutputFormatClass(TextOutputFormat.class);
 
       // We'll run just one reduce task, but we could run multiple

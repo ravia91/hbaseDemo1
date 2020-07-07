@@ -1,5 +1,6 @@
 package com.example.testhbase.demo.mapred;
 
+import com.example.testhbase.demo.utils.TestStringOutput;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
@@ -18,9 +19,8 @@ import org.apache.hadoop.io.LongWritable;
 @NoArgsConstructor
 @Slf4j
 public class UsersTimeMapper extends
-    TableMapper<ImmutableBytesWritable, LongWritable> {
+    TableMapper<ImmutableBytesWritable, ImmutableBytesWritable> {
 
-  private LongWritable ONE = new LongWritable(1);
 
   @Override
   protected void map(ImmutableBytesWritable rowkey, Result columns, Context context)
@@ -39,24 +39,10 @@ public class UsersTimeMapper extends
     }
     log.info(
         "received style attributes: " + new ObjectMapper().writeValueAsString(columnQualifiers));
-    context.write(new ImmutableBytesWritable("rowCount".getBytes()), ONE);
-  }
+    ImmutableBytesWritable valueout = new ImmutableBytesWritable(
+        new ObjectMapper().writeValueAsBytes(columnQualifiers));
 
-  public static long getTimestampFromRowKey(byte[] rowkey) {
-    try {
-      // Extract the time stamp bytes
-      byte[] timestampBytes = Bytes.copy(rowkey, 16, Long.SIZE / 8);
-
-      // Convert the byte[] to a long
-      ByteArrayInputStream bais = new ByteArrayInputStream(timestampBytes);
-      DataInputStream dis = new DataInputStream(bais);
-      return dis.readLong();
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-
-    // The operation failed
-    return -1;
+    context.write(rowkey, valueout);
   }
 
 }
